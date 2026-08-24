@@ -7,6 +7,12 @@ const ctx = canvas.getContext('2d');
 let handLandmarker = null;
 let fingerX = 0, fingerY = 0, fingerVisible = false;
 
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+
 async function initHandLandmarker() {
   const vision = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
@@ -72,6 +78,7 @@ function loop() {
 async function start() {
   await initHandLandmarker();
   await initCamera();
+  resizeCanvas();
   loop();
 }
 
