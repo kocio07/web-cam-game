@@ -35,6 +35,10 @@ let handLandmarker = null;
 let prevDrawX = null;
 let prevDrawY = null;
 
+let wasFist = false;
+let lastFistTime = 0;
+const double_fist_window = 400;
+
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -132,8 +136,18 @@ function loop() {
       ctx.fill();
     }
 
-    if (isFist(points)) {
-      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+     const fistNow = isFist(points);
+
+    if (fistNow && !wasFist) {
+      const now = performance.now();
+      if (now - lastFistTime < double_fist_window) {
+        drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      }
+      lastFistTime = now;
+    }
+    wasFist = fistNow;
+
+    if (fistNow) {
       prevDrawX = null;
       prevDrawY = null;
       continue;
@@ -148,7 +162,7 @@ function loop() {
     }
 
     if (prevDrawX !== null) {
-      drawCtx.strokeStyle = 'currentColor';
+      drawCtx.strokeStyle = currentColor;
       drawCtx.lineWidth = 30;
       drawCtx.lineCap = 'round';
       drawCtx.beginPath();
