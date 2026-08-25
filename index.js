@@ -43,15 +43,14 @@ let prevDrawY = null;
 
 let wasFist = false;
 let lastFistTime = 0;
-const double_fist_window = 300; 
+const double_fist_window = 300;
 
-const pinchDist = distance(thumb, index);
 let isPinching = false;
 const pinch_enter = 35;
 const pinch_exit = 55;
 
-let smootchIndexX = null;
-let smootchIndexY = null;
+let smoothIndexX = null;
+let smoothIndexY = null;
 const smoothing = 0.5;
 
 function resizeCanvas() {
@@ -196,7 +195,6 @@ function loop() {
 
     const fistNow = isFist(points);
 
-   
     if (fistNow && distToHandle < 100) {
       isDraggingSlider = true;
     }
@@ -213,7 +211,6 @@ function loop() {
       brushSize = slider.minSize + t * (slider.maxSize - slider.minSize);
     }
 
-    
     if (fistNow && !wasFist && distToHandle > 100) {
       const now = performance.now();
       if (now - lastFistTime < double_fist_window) {
@@ -229,18 +226,16 @@ function loop() {
       continue;
     }
 
-    
     const index = points[8];
     const thumb = points[4];
 
-    if (smootchIndexX === null) {
-      smootchIndexX = index.x;
-      smootchIndexY = index.y;
+    if (smoothIndexX === null) {
+      smoothIndexX = index.x;
+      smoothIndexY = index.y;
     } else {
-      smootchIndexX += (index.x - smootchIndexX) * (1 - smoothing);
-      smootchIndexY += (index.y - smootchIndexY) * (1 - smoothing);
+      smoothIndexX += (index.x - smoothIndexX) * (1 - smoothing);
+      smoothIndexY += (index.y - smoothIndexY) * (1 - smoothing);
     }
-s
 
     for (const sw of colors) {
       if (pointInRect(index.x, index.y, sw)) {
@@ -248,8 +243,7 @@ s
       }
     }
 
-   
-    const isPinching = distance(thumb, index);
+    const pinchDist = distance(thumb, index);
     if (!isPinching && pinchDist < pinch_enter) {
       isPinching = true;
     } else if (isPinching && pinchDist > pinch_exit) {
@@ -263,11 +257,11 @@ s
         drawCtx.lineCap = 'round';
         drawCtx.beginPath();
         drawCtx.moveTo(prevDrawX, prevDrawY);
-        drawCtx.lineTo(index.x, index.y);
+        drawCtx.lineTo(smoothIndexX, smoothIndexY);
         drawCtx.stroke();
       }
-      prevDrawX = index.x;
-      prevDrawY = index.y;
+      prevDrawX = smoothIndexX;
+      prevDrawY = smoothIndexY;
     } else {
       prevDrawX = null;
       prevDrawY = null;
