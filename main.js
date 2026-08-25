@@ -1,11 +1,20 @@
 import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 
+const HAND_CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],           // kciuk
+  [0,5],[5,6],[6,7],[7,8],           // wskazujący
+  [5,9],[9,10],[10,11],[11,12],      // środkowy
+  [9,13],[13,14],[14,15],[15,16],    // serdeczny
+  [13,17],[17,18],[18,19],[19,20],   // mały palec
+  [0,17]                             // nadgarstek -> podstawa małego palca
+];
+
 const video = document.getElementById('ekran');
 const canvas = document.getElementById('gra');
 const ctx = canvas.getContext('2d');
 
+let hands = [];
 let handLandmarker = null;
-let fingerX = 0, fingerY = 0, fingerVisible = false;
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -23,10 +32,9 @@ async function initHandLandmarker() {
       delegate: "GPU"
     },
     runningMode: "VIDEO",
-    numHands: 1
+    numHands: 2
   });
 }
-
 
 async function initCamera() {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -36,22 +44,18 @@ async function initCamera() {
   });
 }
 
-
 function detectHand() {
   if (!handLandmarker || video.readyState < 2) return;
 
   const result = handLandmarker.detectForVideo(video, performance.now());
 
-  if (result.landmarks && result.landmarks.length > 0) {
-    const tip = result.landmarks[0][8]; 
-    fingerX = (1 - tip.x) * canvas.width;  
-    fingerY = tip.y * canvas.height;
-    fingerVisible = true;
-  } else {
-    fingerVisible = false;
-  }
+  hands = result.landmarks.map(landmarks =>
+    landmarks.map(point => ({
+      x: (1 - point.x) * canvas.width,
+      y: point.y * canvas.height
+    }))
+  );
 }
-
 
 function loop() {
   if (video.readyState >= 2) {
@@ -64,16 +68,26 @@ function loop() {
 
   detectHand();
 
-  if (fingerVisible) {
-    ctx.beginPath();
-    ctx.arc(fingerX, fingerY, 20, 0, Math.PI * 2);
-    ctx.fillStyle = 'lime';
-    ctx.fill();
+  for (const points of hands) {
+    ctx.strokeStyle = 'lime';
+    ctx.lineWidth = 3;
+    for (const [a, b] of HAND_CONNECTIONS) {
+      ctx.beginPath();
+      ctx.moveTo(points[a].x, points[a].y);
+      ctx.lineTo(points[b].x, points[b].y);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = 'red';
+    for (const p of points) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   requestAnimationFrame(loop);
 }
-
 
 async function start() {
   await initHandLandmarker();
