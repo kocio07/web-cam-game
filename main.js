@@ -6,7 +6,7 @@ const HAND_CONNECTIONS = [
   [5,9],[9,10],[10,11],[11,12],      // środkowy
   [9,13],[13,14],[14,15],[15,16],    // serdeczny
   [13,17],[17,18],[18,19],[19,20],   // mały palec
-  [0,17]                             // nadgarstek 
+  [0,17]                             // nadgarstek
 ];
 
 const video = document.getElementById('ekran');
@@ -30,10 +30,6 @@ function resizeCanvas() {
   drawCanvas.height = window.innerHeight;
 }
 window.addEventListener('resize', resizeCanvas);
-
-function distance(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
 
 function isFist(points) {
   const fingerTips = [8, 12, 16, 20];
@@ -105,7 +101,6 @@ function loop() {
       ctx.fill();
     }
 
-    
     if (isFist(points)) {
       drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
       prevDrawX = null;
@@ -113,28 +108,19 @@ function loop() {
       continue;
     }
 
-    const thumb = points[4];
     const index = points[8];
 
-    if (distance(thumb, index) < 40) {
-      const midX = (thumb.x + index.x) / 2;
-      const midY = (thumb.y + index.y) / 2;
-
-      if (prevDrawX !== null) {
-        drawCtx.strokeStyle = 'cyan';
-        drawCtx.lineWidth = 6;
-        drawCtx.lineCap = 'round';
-        drawCtx.beginPath();
-        drawCtx.moveTo(prevDrawX, prevDrawY);
-        drawCtx.lineTo(midX, midY);
-        drawCtx.stroke();
-      }
-      prevDrawX = midX;
-      prevDrawY = midY;
-    } else {
-      prevDrawX = null;
-      prevDrawY = null;
+    if (prevDrawX !== null) {
+      drawCtx.strokeStyle = 'cyan';
+      drawCtx.lineWidth = 6;
+      drawCtx.lineCap = 'round';
+      drawCtx.beginPath();
+      drawCtx.moveTo(prevDrawX, prevDrawY);
+      drawCtx.lineTo(index.x, index.y);
+      drawCtx.stroke();
     }
+    prevDrawX = index.x;
+    prevDrawY = index.y;
   }
 
   requestAnimationFrame(loop);
