@@ -1,0 +1,24 @@
+:root {
+    --main-col: #1e1e2e;
+    --surface-0: #313244;
+    --surface-1:  #45475a;
+    --surface-2: #585b70;
+    --overlay-0: #6c7086;
+    --overlay-1: #7f849c;
+    --overlay-2: #9399b2;
+    --text: #cdd6f4;
+
+}
+
+body {
+    background-color: var(--main-col);
+    color: var(--text);
+}
+
+.gridm {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+
+}
