@@ -6,21 +6,40 @@ const HAND_CONNECTIONS = [
   [5,9],[9,10],[10,11],[11,12],      // środkowy
   [9,13],[13,14],[14,15],[15,16],    // serdeczny
   [13,17],[17,18],[18,19],[19,20],   // mały palec
-  [0,17]                             // nadgarstek -> podstawa małego palca
+  [0,17]                             // nadgarstek 
 ];
 
 const video = document.getElementById('ekran');
+
 const canvas = document.getElementById('gra');
 const ctx = canvas.getContext('2d');
+
+const drawCanvas = document.getElementById('plotno');
+const drawCtx = drawCanvas.getContext('2d');
 
 let hands = [];
 let handLandmarker = null;
 
+let prevDrawX = null;
+let prevDrawY = null;
+
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  drawCanvas.width = window.innerWidth;
+  drawCanvas.height = window.innerHeight;
 }
 window.addEventListener('resize', resizeCanvas);
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function isFist(points) {
+  const fingerTips = [8, 12, 16, 20];
+  const fingerBases = [6, 10, 14, 18];
+  return fingerTips.every((tip, i) => points[tip].y > points[fingerBases[i]].y);
+}
 
 async function initHandLandmarker() {
   const vision = await FilesetResolver.forVisionTasks(
@@ -58,6 +77,7 @@ function detectHand() {
 }
 
 function loop() {
+
   if (video.readyState >= 2) {
     ctx.save();
     ctx.translate(canvas.width, 0);
@@ -83,6 +103,37 @@ function loop() {
       ctx.beginPath();
       ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    
+    if (isFist(points)) {
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      prevDrawX = null;
+      prevDrawY = null;
+      continue;
+    }
+
+    const thumb = points[4];
+    const index = points[8];
+
+    if (distance(thumb, index) < 40) {
+      const midX = (thumb.x + index.x) / 2;
+      const midY = (thumb.y + index.y) / 2;
+
+      if (prevDrawX !== null) {
+        drawCtx.strokeStyle = 'cyan';
+        drawCtx.lineWidth = 6;
+        drawCtx.lineCap = 'round';
+        drawCtx.beginPath();
+        drawCtx.moveTo(prevDrawX, prevDrawY);
+        drawCtx.lineTo(midX, midY);
+        drawCtx.stroke();
+      }
+      prevDrawX = midX;
+      prevDrawY = midY;
+    } else {
+      prevDrawX = null;
+      prevDrawY = null;
     }
   }
 
