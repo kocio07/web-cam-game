@@ -43,11 +43,8 @@ let prevDrawY = null;
 
 let wasFist = false;
 let lastFistTime = 0;
-const double_fist_window = 400;
+const double_fist_window = 300;
 
-let isPinching = false;
-const pinch_enter = 50;
-const pinch_exit = 70;
 
 let smoothIndexX = null;
 let smoothIndexY = null;
@@ -56,8 +53,8 @@ const smoothing = 0.5;
 let fistFrameCount = 0;
 const fist_confirm_frames = 4;
 
-let pinchGraceFrames = 0;
-const pinch_grace = 5;
+let pointFrameCount = 0;
+const point_confirm_frames = 3;
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -68,9 +65,17 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 
 function isFist(points) {
-  const fingerTips = [12, 16, 20];
-  const fingerBases = [10, 14, 18];
+  const fingerTips = [8, 12, 16, 20];
+  const fingerBases = [6, 10, 14, 18];
   return fingerTips.every((tip, i) => points[tip].y > points[fingerBases[i]].y);
+}
+
+function isPointingOnly(points) {
+  const indexExtended = points[8].y < points[6].y;
+  const middleCurled  = points[12].y > points[10].y;
+  const ringCurled    = points[16].y > points[14].y;
+  const pinkyCurled   = points[20].y > points[18].y;
+  return indexExtended && middleCurled && ringCurled && pinkyCurled;
 }
 
 function getFistCenter(points) {
@@ -239,7 +244,7 @@ function loop() {
     }
 
     const index = points[8];
-    const thumb = points[4];
+    
 
     if (smoothIndexX === null) {
       smoothIndexX = index.x;
@@ -254,22 +259,15 @@ function loop() {
         currentColor = sw.color;
       }
     }
-
-    const pinchDist = distance(thumb, index);
-    if (!isPinching && pinchDist < pinch_enter) {
-      isPinching = true;
-      pinchGraceFrames = 0;
-    } else if (isPinching && pinchDist > pinch_exit) {
-      pinchGraceFrames++;
-      if (pinchGraceFrames > pinch_grace) {
-        isPinching = false;
-        pinchGraceFrames = 0;
-      }
+     const pointingNowRaw = isPointingOnly(points);
+    if (pointingNowRaw) {
+      pointFrameCount++;
     } else {
-      pinchGraceFrames = 0;
+      pointFrameCount = 0;
     }
+    const isDrawingGesture = pointFrameCount >= point_confirm_frames;
 
-    if (isPinching) {
+    if (isDrawingGesture) {
       if (prevDrawX !== null) {
         drawCtx.strokeStyle = currentColor;
         drawCtx.lineWidth = brushSize;
@@ -285,6 +283,7 @@ function loop() {
       prevDrawX = null;
       prevDrawY = null;
     }
+    
   }
 
   requestAnimationFrame(loop);
