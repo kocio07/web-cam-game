@@ -112,7 +112,7 @@ function loop() {
 
     if (prevDrawX !== null) {
       drawCtx.strokeStyle = 'cyan';
-      drawCtx.lineWidth = 6;
+      drawCtx.lineWidth = 10;
       drawCtx.lineCap = 'round';
       drawCtx.beginPath();
       drawCtx.moveTo(prevDrawX, prevDrawY);
