@@ -43,7 +43,7 @@ let prevDrawY = null;
 
 let wasFist = false;
 let lastFistTime = 0;
-const DOUBLE_FIST_WINDOW = 400; // ms
+const double_fist_window = 300; 
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -57,6 +57,23 @@ function isFist(points) {
   const fingerTips = [8, 12, 16, 20];
   const fingerBases = [6, 10, 14, 18];
   return fingerTips.every((tip, i) => points[tip].y > points[fingerBases[i]].y);
+}
+
+function getFistCenter(points) {
+  const ids = [0, 5, 9, 13, 17];
+  let sumX = 0, sumY = 0;
+  for (const id of ids) {
+    sumX += points[id].x;
+    sumY += points[id].y;
+  }
+  return {
+    x: sumX / ids.length,
+    y: sumY / ids.length
+  };
+}
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
 function pointInRect(px, py, rect) {
@@ -127,7 +144,6 @@ function drawSlider() {
   ctx.arc(x, slider.handleY, 20, 0, Math.PI * 2);
   ctx.fill();
 
-  
   ctx.fillStyle = currentColor;
   ctx.beginPath();
   ctx.arc(x - 50, slider.handleY, brushSize / 2, 0, Math.PI * 2);
@@ -165,14 +181,14 @@ function loop() {
       ctx.fill();
     }
 
-    const wrist = points[0];
+    const fistCenter = getFistCenter(points);
     const sliderX = canvas.width - 60;
-    const distToHandle = Math.hypot(wrist.x - sliderX, wrist.y - slider.handleY);
+    const distToHandle = Math.hypot(fistCenter.x - sliderX, fistCenter.y - slider.handleY);
 
     const fistNow = isFist(points);
 
-    
-    if (fistNow && distToHandle < 50) {
+   
+    if (fistNow && distToHandle < 100) {
       isDraggingSlider = true;
     }
     if (!fistNow) {
@@ -181,17 +197,17 @@ function loop() {
 
     if (isDraggingSlider) {
       slider.handleY = Math.min(
-        Math.max(wrist.y, slider.trackTop),
+        Math.max(fistCenter.y, slider.trackTop),
         slider.trackTop + slider.trackHeight
       );
       const t = (slider.handleY - slider.trackTop) / slider.trackHeight;
       brushSize = slider.minSize + t * (slider.maxSize - slider.minSize);
     }
 
-   
-    if (fistNow && !wasFist && distToHandle > 50) {
+    
+    if (fistNow && !wasFist && distToHandle > 100) {
       const now = performance.now();
-      if (now - lastFistTime < DOUBLE_FIST_WINDOW) {
+      if (now - lastFistTime < double_fist_window) {
         drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
       }
       lastFistTime = now;
@@ -204,7 +220,9 @@ function loop() {
       continue;
     }
 
+    
     const index = points[8];
+    const thumb = points[4];
 
     for (const sw of colors) {
       if (pointInRect(index.x, index.y, sw)) {
@@ -212,17 +230,25 @@ function loop() {
       }
     }
 
-    if (prevDrawX !== null) {
-      drawCtx.strokeStyle = currentColor;
-      drawCtx.lineWidth = brushSize;
-      drawCtx.lineCap = 'round';
-      drawCtx.beginPath();
-      drawCtx.moveTo(prevDrawX, prevDrawY);
-      drawCtx.lineTo(index.x, index.y);
-      drawCtx.stroke();
+   
+    const isPinching = distance(thumb, index) < 40;
+
+    if (isPinching) {
+      if (prevDrawX !== null) {
+        drawCtx.strokeStyle = currentColor;
+        drawCtx.lineWidth = brushSize;
+        drawCtx.lineCap = 'round';
+        drawCtx.beginPath();
+        drawCtx.moveTo(prevDrawX, prevDrawY);
+        drawCtx.lineTo(index.x, index.y);
+        drawCtx.stroke();
+      }
+      prevDrawX = index.x;
+      prevDrawY = index.y;
+    } else {
+      prevDrawX = null;
+      prevDrawY = null;
     }
-    prevDrawX = index.x;
-    prevDrawY = index.y;
   }
 
   requestAnimationFrame(loop);
