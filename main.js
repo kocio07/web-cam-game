@@ -1,5 +1,14 @@
 import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 
+const colors = [
+  { x: 20,  y: 20, size: 60, color: 'cyan' },
+  { x: 100, y: 20, size: 60, color: 'magenta' },
+  { x: 180, y: 20, size: 60, color: 'yellow' },
+  { x: 260, y: 20, size: 60, color: 'lime' }
+];
+
+let currentColor = 'cyan';
+
 const HAND_CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],           // kciuk
   [0,5],[5,6],[6,7],[7,8],           // wskazujący
@@ -8,6 +17,9 @@ const HAND_CONNECTIONS = [
   [13,17],[17,18],[18,19],[19,20],   // mały palec
   [0,17]                             // nadgarstek
 ];
+
+
+
 
 const video = document.getElementById('ekran');
 
@@ -72,6 +84,24 @@ function detectHand() {
   );
 }
 
+function pointInRect(px, py, rect) {
+  return px >= rect.x && px <= rect.x + rect.size &&
+         py >= rect.y && py <= rect.y + rect.size;
+}
+
+function drawPicker() {
+  for (const sw of colors) {
+    ctx.fillStyle = sw.color;
+    ctx.fillRect(sw.x, sw.y, sw.size, sw.size);
+
+    if (sw.color === currentColor) {
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(sw.x, sw.y, sw.size, sw.size);
+    }
+  }
+}
+
 function loop() {
 
   if (video.readyState >= 2) {
@@ -83,6 +113,7 @@ function loop() {
   }
 
   detectHand();
+  drawPicker();
 
   for (const points of hands) {
     ctx.strokeStyle = 'lime';
@@ -110,9 +141,15 @@ function loop() {
 
     const index = points[8];
 
+    for (const sw of colors) {
+      if (pointInRect(index.x, index.y, sw)) {
+        currentColor = sw.color;
+      }
+    }
+
     if (prevDrawX !== null) {
-      drawCtx.strokeStyle = 'cyan';
-      drawCtx.lineWidth = 10;
+      drawCtx.strokeStyle = 'currentColor';
+      drawCtx.lineWidth = 30;
       drawCtx.lineCap = 'round';
       drawCtx.beginPath();
       drawCtx.moveTo(prevDrawX, prevDrawY);
