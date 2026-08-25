@@ -13,7 +13,8 @@ const colors = [
   { x: 20,  y: 20, size: 60, color: 'cyan' },
   { x: 100, y: 20, size: 60, color: 'magenta' },
   { x: 180, y: 20, size: 60, color: 'yellow' },
-  { x: 260, y: 20, size: 60, color: 'lime' }
+  { x: 260, y: 20, size: 60, color: 'lime' },
+  { x: 340, y: 20, size: 60, color: 'eraser' }
 ];
 let currentColor = 'cyan';
 
@@ -137,8 +138,18 @@ function detectHand() {
 
 function drawPicker() {
   for (const sw of colors) {
-    ctx.fillStyle = sw.color;
-    ctx.fillRect(sw.x, sw.y, sw.size, sw.size);
+    if (sw.color === 'eraser') {
+      ctx.fillStyle = '#333';
+      ctx.fillRect(sw.x, sw.y, sw.size, sw.size);
+      ctx.fillStyle = 'white';
+      ctx.font = '28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('E', sw.x + sw.size/2, sw.y + sw.size/2);
+    } else {
+      ctx.fillStyle = sw.color;
+      ctx.fillRect(sw.x, sw.y, sw.size, sw.size);
+    }
 
     if (sw.color === currentColor) {
       ctx.strokeStyle = 'white';
@@ -267,10 +278,16 @@ function loop() {
     }
     const isDrawingGesture = pointFrameCount >= point_confirm_frames;
 
-    if (isDrawingGesture) {
+        if (isDrawingGesture) {
       if (prevDrawX !== null) {
-        drawCtx.strokeStyle = currentColor;
-        drawCtx.lineWidth = brushSize;
+        if (currentColor === 'eraser') {
+          drawCtx.globalCompositeOperation = 'destination-out';
+          drawCtx.lineWidth = brushSize * 2; 
+        } else {
+          drawCtx.globalCompositeOperation = 'source-over';
+          drawCtx.strokeStyle = currentColor;
+          drawCtx.lineWidth = brushSize;
+        }
         drawCtx.lineCap = 'round';
         drawCtx.beginPath();
         drawCtx.moveTo(prevDrawX, prevDrawY);
@@ -283,7 +300,6 @@ function loop() {
       prevDrawX = null;
       prevDrawY = null;
     }
-    
   }
 
   requestAnimationFrame(loop);
