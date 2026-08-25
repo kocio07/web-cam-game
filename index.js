@@ -43,15 +43,21 @@ let prevDrawY = null;
 
 let wasFist = false;
 let lastFistTime = 0;
-const double_fist_window = 300;
+const double_fist_window = 400;
 
 let isPinching = false;
-const pinch_enter = 35;
-const pinch_exit = 55;
+const pinch_enter = 50;
+const pinch_exit = 70;
 
 let smoothIndexX = null;
 let smoothIndexY = null;
 const smoothing = 0.5;
+
+let fistFrameCount = 0;
+const fist_confirm_frames = 4;
+
+let pinchGraceFrames = 0;
+const pinch_grace = 5;
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -193,7 +199,13 @@ function loop() {
     const sliderX = canvas.width - 60;
     const distToHandle = Math.hypot(fistCenter.x - sliderX, fistCenter.y - slider.handleY);
 
-    const fistNow = isFist(points);
+    const fistNowRaw = isFist(points);
+    if (fistNowRaw) {
+      fistFrameCount++;
+    } else {
+      fistFrameCount = 0;
+    }
+    const fistNow = fistFrameCount >= fist_confirm_frames;
 
     if (fistNow && distToHandle < 100) {
       isDraggingSlider = true;
@@ -246,8 +258,15 @@ function loop() {
     const pinchDist = distance(thumb, index);
     if (!isPinching && pinchDist < pinch_enter) {
       isPinching = true;
+      pinchGraceFrames = 0;
     } else if (isPinching && pinchDist > pinch_exit) {
-      isPinching = false;
+      pinchGraceFrames++;
+      if (pinchGraceFrames > pinch_grace) {
+        isPinching = false;
+        pinchGraceFrames = 0;
+      }
+    } else {
+      pinchGraceFrames = 0;
     }
 
     if (isPinching) {
