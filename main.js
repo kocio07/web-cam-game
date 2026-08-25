@@ -45,6 +45,15 @@ let wasFist = false;
 let lastFistTime = 0;
 const double_fist_window = 300; 
 
+const pinchDist = distance(thumb, index);
+let isPinching = false;
+const pinch_enter = 35;
+const pinch_exit = 55;
+
+let smootchIndexX = null;
+let smootchIndexY = null;
+const smoothing = 0.5;
+
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -54,8 +63,8 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 
 function isFist(points) {
-  const fingerTips = [8, 12, 16, 20];
-  const fingerBases = [6, 10, 14, 18];
+  const fingerTips = [12, 16, 20];
+  const fingerBases = [10, 14, 18];
   return fingerTips.every((tip, i) => points[tip].y > points[fingerBases[i]].y);
 }
 
@@ -224,6 +233,15 @@ function loop() {
     const index = points[8];
     const thumb = points[4];
 
+    if (smootchIndexX === null) {
+      smootchIndexX = index.x;
+      smootchIndexY = index.y;
+    } else {
+      smootchIndexX += (index.x - smootchIndexX) * (1 - smoothing);
+      smootchIndexY += (index.y - smootchIndexY) * (1 - smoothing);
+    }
+s
+
     for (const sw of colors) {
       if (pointInRect(index.x, index.y, sw)) {
         currentColor = sw.color;
@@ -231,7 +249,12 @@ function loop() {
     }
 
    
-    const isPinching = distance(thumb, index) < 40;
+    const isPinching = distance(thumb, index);
+    if (!isPinching && pinchDist < pinch_enter) {
+      isPinching = true;
+    } else if (isPinching && pinchDist > pinch_exit) {
+      isPinching = false;
+    }
 
     if (isPinching) {
       if (prevDrawX !== null) {
