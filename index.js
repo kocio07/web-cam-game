@@ -28,6 +28,14 @@ const slider = {
 };
 let isDraggingSlider = false;
 
+const clearButton = {
+  x: 0,
+  y: 450,
+  radius: 30
+};
+let clearHoverFrames = 0;
+const CLEAR_HOLD_FRAMES = 30;
+
 const video = document.getElementById('ekran');
 
 const canvas = document.getElementById('gra');
@@ -41,11 +49,6 @@ let handLandmarker = null;
 
 let prevDrawX = null;
 let prevDrawY = null;
-
-let wasFist = false;
-let lastFistTime = 0;
-const double_fist_window = 300;
-
 
 let smoothIndexX = null;
 let smoothIndexY = null;
@@ -92,13 +95,25 @@ function getFistCenter(points) {
   };
 }
 
-function distance(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
 function pointInRect(px, py, rect) {
   return px >= rect.x && px <= rect.x + rect.size &&
          py >= rect.y && py <= rect.y + rect.size;
+}
+
+function pointInCircle(px, py, cx, cy, r) {
+  return Math.hypot(px - cx, py - cy) < r;
+}
+
+function isOverUI(px, py) {
+  const overPalette = colors.some(sw => pointInRect(px, py, sw));
+
+  const sliderX = canvas.width - 60;
+  const overSlider = px > sliderX - 40 && px < sliderX + 80 &&
+                      py > slider.trackTop - 30 && py < slider.trackTop + slider.trackHeight + 70;
+
+  const overClear = pointInCircle(px, py, clearButton.x, clearButton.y, clearButton.radius + 50);
+
+  return overPalette || overSlider || overClear;
 }
 
 async function initHandLandmarker() {
@@ -174,10 +189,32 @@ function drawSlider() {
   ctx.arc(x, slider.handleY, 20, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = currentColor;
+  ctx.fillStyle = currentColor === 'eraser' ? '#333' : currentColor;
   ctx.beginPath();
   ctx.arc(x - 50, slider.handleY, brushSize / 2, 0, Math.PI * 2);
   ctx.fill();
+
+  clearButton.x = x;
+  const holdProgress = clearHoverFrames / CLEAR_HOLD_FRAMES;
+
+  ctx.fillStyle = '#c0392b';
+  ctx.beginPath();
+  ctx.arc(clearButton.x, clearButton.y, clearButton.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (holdProgress > 0) {
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(clearButton.x, clearButton.y, clearButton.radius + 6, -Math.PI/2, -Math.PI/2 + holdProgress * Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = 'white';
+  ctx.font = '24px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('C', clearButton.x, clearButton.y);
 }
 
 function loop() {
@@ -239,15 +276,6 @@ function loop() {
       brushSize = slider.minSize + t * (slider.maxSize - slider.minSize);
     }
 
-    if (fistNow && !wasFist && distToHandle > 100) {
-      const now = performance.now();
-      if (now - lastFistTime < double_fist_window) {
-        drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-      }
-      lastFistTime = now;
-    }
-    wasFist = fistNow;
-
     if (fistNow) {
       prevDrawX = null;
       prevDrawY = null;
@@ -255,7 +283,6 @@ function loop() {
     }
 
     const index = points[8];
-    
 
     if (smoothIndexX === null) {
       smoothIndexX = index.x;
@@ -265,12 +292,14 @@ function loop() {
       smoothIndexY += (index.y - smoothIndexY) * (1 - smoothing);
     }
 
+    
     for (const sw of colors) {
       if (pointInRect(index.x, index.y, sw)) {
         currentColor = sw.color;
       }
     }
-     const pointingNowRaw = isPointingOnly(points);
+
+    const pointingNowRaw = isPointingOnly(points);
     if (pointingNowRaw) {
       pointFrameCount++;
     } else {
@@ -278,11 +307,31 @@ function loop() {
     }
     const isDrawingGesture = pointFrameCount >= point_confirm_frames;
 
-        if (isDrawingGesture) {
+    const overClearButton = pointInCircle(index.x, index.y, clearButton.x, clearButton.y, clearButton.radius);
+
+    if (isDrawingGesture && overClearButton) {
+      clearHoverFrames++;
+      if (clearHoverFrames >= CLEAR_HOLD_FRAMES) {
+        drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        clearHoverFrames = 0;
+      }
+    } else {
+      clearHoverFrames = 0;
+    }
+
+    
+    const overUI = isOverUI(index.x, index.y);
+    if (overUI) {
+      prevDrawX = null;
+      prevDrawY = null;
+      continue;
+    }
+
+    if (isDrawingGesture) {
       if (prevDrawX !== null) {
         if (currentColor === 'eraser') {
           drawCtx.globalCompositeOperation = 'destination-out';
-          drawCtx.lineWidth = brushSize * 2; 
+          drawCtx.lineWidth = brushSize * 2;
         } else {
           drawCtx.globalCompositeOperation = 'source-over';
           drawCtx.strokeStyle = currentColor;
