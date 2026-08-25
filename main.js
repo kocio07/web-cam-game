@@ -1,14 +1,5 @@
 import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 
-const colors = [
-  { x: 20,  y: 20, size: 60, color: 'cyan' },
-  { x: 100, y: 20, size: 60, color: 'magenta' },
-  { x: 180, y: 20, size: 60, color: 'yellow' },
-  { x: 260, y: 20, size: 60, color: 'lime' }
-];
-
-let currentColor = 'cyan';
-
 const HAND_CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],           // kciuk
   [0,5],[5,6],[6,7],[7,8],           // wskazujący
@@ -18,8 +9,23 @@ const HAND_CONNECTIONS = [
   [0,17]                             // nadgarstek
 ];
 
+const colors = [
+  { x: 20,  y: 20, size: 60, color: 'cyan' },
+  { x: 100, y: 20, size: 60, color: 'magenta' },
+  { x: 180, y: 20, size: 60, color: 'yellow' },
+  { x: 260, y: 20, size: 60, color: 'lime' }
+];
+let currentColor = 'cyan';
 
-
+let brushSize = 30;
+const slider = {
+  trackTop: 100,
+  trackHeight: 300,
+  handleY: 100,
+  minSize: 5,
+  maxSize: 100
+};
+let isDraggingSlider = false;
 
 const video = document.getElementById('ekran');
 
@@ -37,7 +43,7 @@ let prevDrawY = null;
 
 let wasFist = false;
 let lastFistTime = 0;
-const double_fist_window = 400;
+const DOUBLE_FIST_WINDOW = 400; // ms
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -51,6 +57,11 @@ function isFist(points) {
   const fingerTips = [8, 12, 16, 20];
   const fingerBases = [6, 10, 14, 18];
   return fingerTips.every((tip, i) => points[tip].y > points[fingerBases[i]].y);
+}
+
+function pointInRect(px, py, rect) {
+  return px >= rect.x && px <= rect.x + rect.size &&
+         py >= rect.y && py <= rect.y + rect.size;
 }
 
 async function initHandLandmarker() {
@@ -88,11 +99,6 @@ function detectHand() {
   );
 }
 
-function pointInRect(px, py, rect) {
-  return px >= rect.x && px <= rect.x + rect.size &&
-         py >= rect.y && py <= rect.y + rect.size;
-}
-
 function drawPicker() {
   for (const sw of colors) {
     ctx.fillStyle = sw.color;
@@ -104,6 +110,28 @@ function drawPicker() {
       ctx.strokeRect(sw.x, sw.y, sw.size, sw.size);
     }
   }
+}
+
+function drawSlider() {
+  const x = canvas.width - 60;
+
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(x, slider.trackTop);
+  ctx.lineTo(x, slider.trackTop + slider.trackHeight);
+  ctx.stroke();
+
+  ctx.fillStyle = isDraggingSlider ? 'orange' : 'white';
+  ctx.beginPath();
+  ctx.arc(x, slider.handleY, 20, 0, Math.PI * 2);
+  ctx.fill();
+
+  
+  ctx.fillStyle = currentColor;
+  ctx.beginPath();
+  ctx.arc(x - 50, slider.handleY, brushSize / 2, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function loop() {
@@ -118,6 +146,7 @@ function loop() {
 
   detectHand();
   drawPicker();
+  drawSlider();
 
   for (const points of hands) {
     ctx.strokeStyle = 'lime';
@@ -136,11 +165,33 @@ function loop() {
       ctx.fill();
     }
 
-     const fistNow = isFist(points);
+    const wrist = points[0];
+    const sliderX = canvas.width - 60;
+    const distToHandle = Math.hypot(wrist.x - sliderX, wrist.y - slider.handleY);
 
-    if (fistNow && !wasFist) {
+    const fistNow = isFist(points);
+
+    
+    if (fistNow && distToHandle < 50) {
+      isDraggingSlider = true;
+    }
+    if (!fistNow) {
+      isDraggingSlider = false;
+    }
+
+    if (isDraggingSlider) {
+      slider.handleY = Math.min(
+        Math.max(wrist.y, slider.trackTop),
+        slider.trackTop + slider.trackHeight
+      );
+      const t = (slider.handleY - slider.trackTop) / slider.trackHeight;
+      brushSize = slider.minSize + t * (slider.maxSize - slider.minSize);
+    }
+
+   
+    if (fistNow && !wasFist && distToHandle > 50) {
       const now = performance.now();
-      if (now - lastFistTime < double_fist_window) {
+      if (now - lastFistTime < DOUBLE_FIST_WINDOW) {
         drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
       }
       lastFistTime = now;
@@ -163,7 +214,7 @@ function loop() {
 
     if (prevDrawX !== null) {
       drawCtx.strokeStyle = currentColor;
-      drawCtx.lineWidth = 30;
+      drawCtx.lineWidth = brushSize;
       drawCtx.lineCap = 'round';
       drawCtx.beginPath();
       drawCtx.moveTo(prevDrawX, prevDrawY);
