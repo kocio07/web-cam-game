@@ -68,6 +68,11 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 
+function getHandScale(points) {
+  return Math.hypot(points[9].x - points[0].x, points[9].y - points[0].y);
+}
+
+
 function isFingerExtended(points, tipId, pipId, wristId = 0) {
   const distTip = Math.hypot(points[tipId].x - points[wristId].x, points[tipId].y - points[wristId].y);
   const distPip = Math.hypot(points[pipId].x - points[wristId].x, points[pipId].y - points[wristId].y);
@@ -269,7 +274,7 @@ function loop() {
     }
     const fistNow = fistFrameCount >= fist_confirm_frames;
 
-    if (fistNow && distToHandle < 100) {
+    if (fistNow && distToHandle < getHandScale(points) * 2) {
       isDraggingSlider = true;
     }
     if (!fistNow) {
