@@ -49,10 +49,10 @@ function detectHand() {
 }
 
 function drawBasket(x, y) {
-  ctx.font = '70px serif';
+  ctx.font = '100px serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('B', x, y);
+  ctx.fillText('🧺', x, y);
 }
 
 function loop() {
