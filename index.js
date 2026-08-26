@@ -68,17 +68,26 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 
+function isFingerExtended(points, tipId, pipId, wristId = 0) {
+  const distTip = Math.hypot(points[tipId].x - points[wristId].x, points[tipId].y - points[wristId].y);
+  const distPip = Math.hypot(points[pipId].x - points[wristId].x, points[pipId].y - points[wristId].y);
+  return distTip > distPip;
+}
+
+
+
 function isFist(points) {
-  const fingerTips = [8, 12, 16, 20];
-  const fingerBases = [6, 10, 14, 18];
-  return fingerTips.every((tip, i) => points[tip].y > points[fingerBases[i]].y);
+  return !isFingerExtended(points, 8, 6) &&
+  !isFingerExtended(points, 12, 10) &&
+  !isFingerExtended(points, 16, 14) &&
+  !isFingerExtended(points, 20, 18);
 }
 
 function isPointingOnly(points) {
-  const indexExtended = points[8].y < points[6].y;
-  const middleCurled  = points[12].y > points[10].y;
-  const ringCurled    = points[16].y > points[14].y;
-  const pinkyCurled   = points[20].y > points[18].y;
+  const indexExtended  = isFingerExtended(points, 8, 6);
+  const middleCurled   = !isFingerExtended(points, 12, 10);
+  const ringCurled     = !isFingerExtended(points, 16, 14);
+  const pinkyCurled    = !isFingerExtended(points, 20, 18);
   return indexExtended && middleCurled && ringCurled && pinkyCurled;
 }
 
