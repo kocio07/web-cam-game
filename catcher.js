@@ -12,7 +12,7 @@ let score = 0;
 let lastSpawn = 0;
 let spawnInterval = 1000;
 
-const items = ['A', 'O', 'L', 'G'];
+const items = ['🍎', '🍊', '🍋', '🍇'];
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
