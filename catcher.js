@@ -24,6 +24,24 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 
+function isFist(points) {
+  const fingerTips = [8, 12, 16, 20];
+  const fingerBases = [6, 10, 14, 18];
+  return fingerTips.every((tip, i) => {
+    const tipDist = Math.hypot(points[tip].x - points[0].x, points[tip].y - points[0].y);
+    const baseDist = Math.hypot(points[fingerBases[i]].x - points[0].x, points[fingerBases[i]].y - points[0].y);
+    return tipDist < baseDist;
+  });
+}
+
+function resetGame() {
+  score = 0;
+  hp = 3;
+  gameOver = false;
+  fallingItems = [];
+  lastSpawn = performance.now();
+}
+
 async function initHandLandmarker() {
   const vision = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
@@ -60,7 +78,7 @@ function detectHand() {
 }
 
 function drawBasket(x, y) {
-  ctx.font = '100px serif';
+  ctx.font = '200px serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('🧺', x, y);
@@ -80,7 +98,7 @@ function spawnItem() {
 }
 
 function updateAndDrawItems() {
-  ctx.font = '50px serif';
+  ctx.font = '100px serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -169,6 +187,12 @@ function loop(now) {
     drawUI();
   } else {
     drawGameOver();
+
+    for (const points of hands) {
+      if (isFist(points)) {
+        resetGame();
+      }
+    }
   }
 
   requestAnimationFrame(loop);
