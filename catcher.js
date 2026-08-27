@@ -10,7 +10,7 @@ let handLandmarker = null;
 let fallingItems = [];
 let score = 0;
 let lastSpawn = 0;
-let spawnInterval = 1000;
+let spawnInterval = 800;
 
 const goodItems = ['🍎', '🍊', '🍋', '🍇'];
 const bomb = '💣';
@@ -85,7 +85,7 @@ function drawBasket(x, y) {
 }
 
 function spawnItem() {
-  const isBomb = Math.random() < 0.2;
+  const isBomb = Math.random() < 0.28;
 
   fallingItems.push({
     x: 50 + Math.random() * (canvas.width - 100),
