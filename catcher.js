@@ -12,7 +12,11 @@ let score = 0;
 let lastSpawn = 0;
 let spawnInterval = 1000;
 
-const items = ['🍎', '🍊', '🍋', '🍇'];
+const goodItems = ['🍎', '🍊', '🍋', '🍇'];
+const bomb = '💣';
+
+let hp = 3;
+let gameOver = false;
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -63,11 +67,14 @@ function drawBasket(x, y) {
 }
 
 function spawnItem() {
+  const isBomb = Math.random() < 0.2;
+
   fallingItems.push({
     x: 50 + Math.random() * (canvas.width - 100),
     y: -40,
     vy: 2 + Math.random() * 2,
-    letter: items[Math.floor(Math.random() * items.length)],
+    letter: isBomb ? bomb : goodItems[Math.floor(Math.random() * goodItems.length)],
+    isBomb: isBomb,
     radius: 30
   });
 }
@@ -94,9 +101,44 @@ function checkCatch(basketX, basketY) {
     const dist = Math.hypot(item.x - basketX, item.y - basketY);
     if (dist < item.radius + 40) {
       fallingItems.splice(i, 1);
-      score++;
+      if (item.isBomb) {
+        hp--;
+        if (hp <= 0) {
+          gameOver = true;
+        }
+      } else {
+        score++;
+      }
     }
   }
+}
+
+function drawUI() {
+  ctx.font = '32px sans-serif';
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'left';
+  ctx.fillText('Score: ' + score, 20, 50);
+
+  ctx.font = '32px sans-serif';
+  ctx.fillStyle = 'red';
+  ctx.textAlign = 'right';
+  ctx.fillText('♡'.repeat(Math.max(hp, 0)), canvas.width - 20, 50);
+}
+
+function drawGameOver() {
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'center';
+  ctx.font = '60px sans-serif';
+  ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40);
+
+  ctx.font = '36px sans-serif';
+  ctx.fillText('Score: ' + score, canvas.width / 2, canvas.height / 2 + 20);
+
+  ctx.font = '24px sans-serif';
+  ctx.fillText('Show ur fist to play again', canvas.width / 2, canvas.height / 2 + 70);
 }
 
 function loop(now) {
@@ -110,23 +152,24 @@ function loop(now) {
 
   detectHand();
 
-  if (now - lastSpawn > spawnInterval) {
-    spawnItem();
-    lastSpawn = now;
+  if (!gameOver) {
+    if (now - lastSpawn > spawnInterval) {
+      spawnItem();
+      lastSpawn = now;
+    }
+
+    updateAndDrawItems();
+
+    for (const points of hands) {
+      const palmCenter = points[9];
+      drawBasket(palmCenter.x, palmCenter.y);
+      checkCatch(palmCenter.x, palmCenter.y);
+    }
+
+    drawUI();
+  } else {
+    drawGameOver();
   }
-
-  updateAndDrawItems();
-
-  for (const points of hands) {
-    const palmCenter = points[9];
-    drawBasket(palmCenter.x, palmCenter.y);
-    checkCatch(palmCenter.x, palmCenter.y);
-  }
-
-  ctx.font = '32px sans-serif';
-  ctx.fillStyle = 'white';
-  ctx.textAlign = 'left';
-  ctx.fillText('Wynik: ' + score, 20, 50);
 
   requestAnimationFrame(loop);
 }
@@ -135,7 +178,7 @@ async function start() {
   await initHandLandmarker();
   await initCamera();
   resizeCanvas();
-  loop();
+  requestAnimationFrame(loop);
 }
 
 start();
