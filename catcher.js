@@ -140,7 +140,7 @@ function drawUI() {
   ctx.font = '32px sans-serif';
   ctx.fillStyle = 'red';
   ctx.textAlign = 'right';
-  ctx.fillText('♡'.repeat(Math.max(hp, 0)), canvas.width - 20, 50);
+  ctx.fillText('❤️'.repeat(Math.max(hp, 0)), canvas.width - 20, 50);
 }
 
 function drawGameOver() {
