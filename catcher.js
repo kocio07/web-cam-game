@@ -79,21 +79,6 @@ function detectHand() {
   );
 }
 
-function WYbuch(x, y, color) {
-  const count = 14;
-  for (let i = 0; i < count; i++) {
-    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
-    const speed = 2 + Math.random() * 3;
-    particles.push({
-      x: x,
-      y: y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      life: 1,
-      color: color
-    });
-  }
-}
 
 function drawBasket(x, y) {
   ctx.font = '200px serif';
