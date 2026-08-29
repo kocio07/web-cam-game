@@ -33,3 +33,12 @@ function spawnFruits() {
         sliced: false
     });
 }
+
+function updateAndDrawFruits() {
+    ctx.font = '50px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseLine = 'middle';
+
+    
+
+}
