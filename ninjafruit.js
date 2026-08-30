@@ -12,6 +12,10 @@ let prevFingerY = null;
 let score = 0;
 let bladeTrail = [];
 
+let smoothFingerX = null;
+let smoothFingerY = null;
+const trailSmoothing = 0.4;
+
 let fruits = [];
 let lastSpawn = 0;
 let spawnInterval = 1500;
@@ -30,8 +34,8 @@ function spawnFruits() {
   fruits.push({
     x: startX,
     y: canvas.height + 40,
-    vx: (Math.random() - 0.5) * 4,      
-    vy: -14 - Math.random() * 4,        
+    vx: (Math.random() - 0.5) * 4,
+    vy: -14 - Math.random() * 4,
     emoji: fruitsTxt[Math.floor(Math.random() * fruitsTxt.length)],
     radius: 35,
     sliced: false
@@ -47,11 +51,10 @@ function updateAndDrawFruits() {
     const f = fruits[i];
     f.x += f.vx;
     f.y += f.vy;
-    f.vy += gravity; 
+    f.vy += gravity;
 
     ctx.fillText(f.emoji, f.x, f.y);
 
-    
     if (f.y > canvas.height + 100) {
       fruits.splice(i, 1);
     }
@@ -59,28 +62,25 @@ function updateAndDrawFruits() {
 }
 
 function lineCircleIntersect(x1, y1, x2, y2, cx, cy, r) {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const lengthSq = dx * dx + dy * dy;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const lengthSq = dx * dx + dy * dy;
 
-    if (lengthSq === 0) {
-        return Math.hypot(cx - x1, cy - y1) < r;
-    }
+  if (lengthSq === 0) {
+    return Math.hypot(cx - x1, cy - y1) < r;
+  }
 
-    let t =  ((cx - x1) * dx + (cy - y1) * dy) / lengthSq;
-    t = Math.max(0, Math.min(1, t));
+  let t = ((cx - x1) * dx + (cy - y1) * dy) / lengthSq;
+  t = Math.max(0, Math.min(1, t));
 
-    const closestX = x1 + t * dx;
-    const closestY = y1 + t * dy;
+  const closestX = x1 + t * dx;
+  const closestY = y1 + t * dy;
 
-    return Math.hypot(cx - closestX, cy - closestY) < r;
-
-    
-
+  return Math.hypot(cx - closestX, cy - closestY) < r;
 }
 
 function checkSlice(x1, y1, x2, y2) {
-    const hitMargin = 20;
+  const hitMargin = 20;
   for (let i = fruits.length - 1; i >= 0; i--) {
     const f = fruits[i];
     if (lineCircleIntersect(x1, y1, x2, y2, f.x, f.y, f.radius + hitMargin)) {
@@ -91,23 +91,18 @@ function checkSlice(x1, y1, x2, y2) {
 }
 
 function updateAndDrawBladeTrail() {
-  if (bladeTrail.length < 3) return;
-
   ctx.strokeStyle = 'white';
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 10;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  ctx.beginPath();
-  ctx.moveTo(bladeTrail[0].x, bladeTrail[0].y);
-
-  for (let i = 1; i < bladeTrail.length - 1; i++) {
-    const midX = (bladeTrail[i].x + bladeTrail[i + 1].x) / 2;
-    const midY = (bladeTrail[i].y + bladeTrail[i + 1].y) / 2;
+  for (let i = 1; i < bladeTrail.length; i++) {
     ctx.globalAlpha = i / bladeTrail.length;
-    ctx.quadraticCurveTo(bladeTrail[i].x, bladeTrail[i].y, midX, midY);
+    ctx.beginPath();
+    ctx.moveTo(bladeTrail[i - 1].x, bladeTrail[i - 1].y);
+    ctx.lineTo(bladeTrail[i].x, bladeTrail[i].y);
+    ctx.stroke();
   }
-  ctx.stroke();
   ctx.globalAlpha = 1;
 
   if (bladeTrail.length > 12) {
@@ -165,19 +160,30 @@ function loop(now) {
     spawnFruits();
     lastSpawn = now;
   }
-  if (hands.lenght === 0) {
+
+  if (hands.length === 0) {
     prevFingerX = null;
     prevFingerY = null;
+    smoothFingerX = null;
+    smoothFingerY = null;
   }
 
-    for (const points of hands) {
+  for (const points of hands) {
     const indexTip = points[8];
+
+    if (smoothFingerX === null) {
+      smoothFingerX = indexTip.x;
+      smoothFingerY = indexTip.y;
+    } else {
+      smoothFingerX += (indexTip.x - smoothFingerX) * (1 - trailSmoothing);
+      smoothFingerY += (indexTip.y - smoothFingerY) * (1 - trailSmoothing);
+    }
 
     if (prevFingerX !== null) {
       checkSlice(prevFingerX, prevFingerY, indexTip.x, indexTip.y);
     }
 
-    bladeTrail.push({ x: indexTip.x, y: indexTip.y });
+    bladeTrail.push({ x: smoothFingerX, y: smoothFingerY });
 
     prevFingerX = indexTip.x;
     prevFingerY = indexTip.y;
