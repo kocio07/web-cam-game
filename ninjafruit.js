@@ -7,6 +7,11 @@ const ctx = canvas.getContext('2d');
 let hands = [];
 let handLandmarker = null;
 
+let prevFingerX = null;
+let prevFingerY = null;
+let score = 0;
+let bladeTrail = [];
+
 let fruits = [];
 let lastSpawn = 0;
 let spawnInterval = 1500;
@@ -51,6 +56,27 @@ function updateAndDrawFruits() {
       fruits.splice(i, 1);
     }
   }
+}
+
+function lineCircleIntersect(x1, y1, x2, y2, cx, cy, r) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lengthSq = dx * dx + dy * dy;
+
+    if (lengthSq === 0) {
+        return Math.hypot(cx - x1, cy - y1) < r;
+    }
+
+    let t =  ((cx - x1) * dx + (cy - y1) * dy) / lengthSq;
+    t = Math.max(0, Math.min(1, t));
+
+    const closestX = x1 + t * dx;
+    const closestY = y1 + t * dy;
+
+    return Math.hypot(cx - closestX, cy - closestY) < r;
+
+    
+
 }
 
 async function initHandLandmarker() {
