@@ -79,6 +79,37 @@ function lineCircleIntersect(x1, y1, x2, y2, cx, cy, r) {
 
 }
 
+function checkSlice(x1, y1, x2, y2) {
+  for (let i = fruits.length - 1; i >= 0; i--) {
+    const f = fruits[i];
+    if (lineCircleIntersect(x1, y1, x2, y2, f.x, f.y, f.radius)) {
+      fruits.splice(i, 1);
+      score++;
+    }
+  }
+}
+
+function updateAndDrawBladeTrail() {
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 10;
+  ctx.lineCap = 'round';
+
+  for (let i = bladeTrail.length - 1; i >= 1; i--) {
+    const p1 = bladeTrail[i];
+    const p2 = bladeTrail[i - 1];
+    ctx.globalAlpha = i / bladeTrail.length;
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  if (bladeTrail.length > 15) {
+    bladeTrail.shift();
+  }
+}
+
 async function initHandLandmarker() {
   const vision = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
@@ -130,7 +161,27 @@ function loop(now) {
     lastSpawn = now;
   }
 
+
+    for (const points of hands) {
+    const indexTip = points[8];
+
+    if (prevFingerX !== null) {
+      checkSlice(prevFingerX, prevFingerY, indexTip.x, indexTip.y);
+    }
+
+    bladeTrail.push({ x: indexTip.x, y: indexTip.y });
+
+    prevFingerX = indexTip.x;
+    prevFingerY = indexTip.y;
+  }
+
+  updateAndDrawBladeTrail();
   updateAndDrawFruits();
+
+  ctx.font = '32px sans-serif';
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'left';
+  ctx.fillText('Score: ' + score, 20, 50);
 
   requestAnimationFrame(loop);
 }
