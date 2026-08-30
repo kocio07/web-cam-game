@@ -11,7 +11,7 @@ let fruits = [];
 let lastSpawn = 0;
 let spawnInterval = 1500;
 
-const gravity = 0.5;
+const gravity = 0.25;
 const fruitsTxt = ['🍎', '🍊', '🍋', '🍍', '🍓'];
 
 function resizeCanvas() {
