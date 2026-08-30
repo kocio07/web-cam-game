@@ -80,9 +80,10 @@ function lineCircleIntersect(x1, y1, x2, y2, cx, cy, r) {
 }
 
 function checkSlice(x1, y1, x2, y2) {
+    const hitMargin = 20;
   for (let i = fruits.length - 1; i >= 0; i--) {
     const f = fruits[i];
-    if (lineCircleIntersect(x1, y1, x2, y2, f.x, f.y, f.radius)) {
+    if (lineCircleIntersect(x1, y1, x2, y2, f.x, f.y, f.radius + hitMargin)) {
       fruits.splice(i, 1);
       score++;
     }
@@ -90,22 +91,26 @@ function checkSlice(x1, y1, x2, y2) {
 }
 
 function updateAndDrawBladeTrail() {
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 10;
-  ctx.lineCap = 'round';
+  if (bladeTrail.length < 3) return;
 
-  for (let i = bladeTrail.length - 1; i >= 1; i--) {
-    const p1 = bladeTrail[i];
-    const p2 = bladeTrail[i - 1];
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(bladeTrail[0].x, bladeTrail[0].y);
+
+  for (let i = 1; i < bladeTrail.length - 1; i++) {
+    const midX = (bladeTrail[i].x + bladeTrail[i + 1].x) / 2;
+    const midY = (bladeTrail[i].y + bladeTrail[i + 1].y) / 2;
     ctx.globalAlpha = i / bladeTrail.length;
-    ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.stroke();
+    ctx.quadraticCurveTo(bladeTrail[i].x, bladeTrail[i].y, midX, midY);
   }
+  ctx.stroke();
   ctx.globalAlpha = 1;
 
-  if (bladeTrail.length > 15) {
+  if (bladeTrail.length > 12) {
     bladeTrail.shift();
   }
 }
@@ -160,7 +165,10 @@ function loop(now) {
     spawnFruits();
     lastSpawn = now;
   }
-
+  if (hands.lenght === 0) {
+    prevFingerX = null;
+    prevFingerY = null;
+  }
 
     for (const points of hands) {
     const indexTip = points[8];
