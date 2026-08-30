@@ -43,7 +43,7 @@ function spawnFruits() {
 }
 
 function updateAndDrawFruits() {
-  ctx.font = '60px serif';
+  ctx.font = '200px serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -92,7 +92,7 @@ function checkSlice(x1, y1, x2, y2) {
 
 function updateAndDrawBladeTrail() {
   ctx.strokeStyle = 'white';
-  ctx.lineWidth = 10;
+  ctx.lineWidth = 20;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
